@@ -11,7 +11,7 @@ function alphabetical_tags_and_categories() {
 
     // Get all tags
     $tags = get_tags( array('orderby' => 'name', 'order' => 'ASC') );
-    
+
     // Get all categories
     $categories = get_categories( array('orderby' => 'name', 'order' => 'ASC') );
 
@@ -25,7 +25,7 @@ function alphabetical_tags_and_categories() {
 
     // Sort array alphabetically
     usort($merged, function($a, $b) {
-    return strcasecmp($a->name, $b->name);
+        return strcasecmp($a->name, $b->name);
     });
 
     // Group by first letter
@@ -55,17 +55,39 @@ function alphabetical_tags_and_categories() {
     }
     $index .= '</p></div>';
 
+    // Prepare itemList structured data
+    $itemList = [];
+
     // Build output string
     $output = $index;
+    $position = 1;
     foreach ($grouped as $letter => $items) {
         $output .= '<div class="topic-group">';
         $output .= '<h2 id="group-' . $letter . '">' . $letter . '</h2>';
         $output .= '<ul class="alphabetical-list">';
         foreach ($items as $item) {
             $output .= '<li><a href="' . get_term_link($item) . '">' . $item->name . '</a></li>';
+            $itemList[] = [
+                "@type" => "ListItem",
+                "position" => $position,
+                "item" => [
+                    "@id" => get_term_link($item),
+                    "name" => $item->name
+                ]
+            ];
+            $position++;
         }
         $output .= '</ul></div>';
     }
+
+    // Add itemList structured data
+    $structuredData = [
+        "@context" => "https://schema.org",
+        "@type" => "ItemList",
+        "itemListElement" => $itemList
+    ];
+
+    $output .= '<script type="application/ld+json">' . json_encode($structuredData, JSON_UNESCAPED_SLASHES) . '</script>';
 
     return $output;
 }
